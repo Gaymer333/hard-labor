@@ -1,14 +1,20 @@
 import { useEffect, useState } from "react";
 import styled from "styled-components";
+import hit from "../../../assets/images/games/mine/hit.jpg";
+import swing from "../../../assets/images/games/mine/swing.jpg";
 
 const Wrapper = styled.div`
   width: 100%;
   height: 100%;
   display: flex;
   gap: 20px;
-  flex-direction: column;
+  flex-direction: row;
   justify-content: center;
   align-items: center;
+`;
+
+const SideWrapper = styled(Wrapper)`
+  width: 50%;
 `;
 
 const BAR_WIDTH = 300;
@@ -51,6 +57,7 @@ function Mine() {
   const [aimPosition, setAimPosition] = useState<number>(0);
 
   const [score, setScore] = useState<number>(0);
+  const [showHitImage, setShowHitImage] = useState<boolean>(false);
 
   function generateTargetDetails() {
     const start = Math.floor(Math.random() * (BAR_WIDTH - TARGET_DEFAULT_LENGTH - 2 * BAR_SIDE_SAFE_MARGIN)) + BAR_SIDE_SAFE_MARGIN;
@@ -83,6 +90,7 @@ function Mine() {
       const { start, length } = targetDetails;
       if (aimPosition >= start - 5 && aimPosition <= start + length + 5) {
         setScore(prev => prev + 1);
+        setShowHitImage(true);
         generateTargetDetails(); // Generate a new target after a successful hit
       }
     }
@@ -101,13 +109,32 @@ function Mine() {
     };
   }, [aimPosition, targetDetails]);
 
+  useEffect(() => {
+    if (showHitImage) {
+      const timer = setTimeout(() => {
+        setShowHitImage(false);
+      }, 500); // Show the hit image for 500ms
+
+      return () => clearTimeout(timer);
+    }
+  }, [showHitImage]);
+
   return (
     <Wrapper>
-      <div>Score: {score}</div>
-      <BarBackground>
-        {targetDetails && <Target start={targetDetails.start} length={targetDetails.length} />}
-        <AimLine position={aimPosition} />
-      </BarBackground>
+      <SideWrapper>
+        <div>Score: {score}</div>
+        <BarBackground>
+          {targetDetails && <Target start={targetDetails.start} length={targetDetails.length} />}
+          <AimLine position={aimPosition} />
+        </BarBackground>
+      </SideWrapper>
+      <SideWrapper>
+        {showHitImage ? (
+          <img src={hit} alt="Hit" style={{ height: "100%", width: "auto" }} />
+        ) : (
+          <img src={swing} alt="Swing" style={{ height: "100%", width: "auto" }} />
+        )}
+      </SideWrapper>
     </Wrapper>
   );
 }
