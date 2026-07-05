@@ -1,7 +1,14 @@
 import { useEffect, useState } from "react";
 import styled from "styled-components";
-import hit from "../../../assets/images/games/mine/hit.jpg";
-import swing from "../../../assets/images/games/mine/swing.jpg";
+import _1hit from "../../../assets/images/games/mine/1hit.jpg";
+import _1swing from "../../../assets/images/games/mine/1swing.jpg";
+import _2hit from "../../../assets/images/games/mine/2hit.jpg";
+import _2swing from "../../../assets/images/games/mine/2swing.jpg";
+import _3hit from "../../../assets/images/games/mine/3hit.jpg";
+import _3swing from "../../../assets/images/games/mine/3swing.jpg";
+
+const hitImages = [_1hit, _2hit, _3hit];
+const swingImages = [_1swing, _2swing, _3swing];
 
 const Wrapper = styled.div`
   width: 100%;
@@ -58,6 +65,9 @@ function Mine() {
 
   const [score, setScore] = useState<number>(0);
   const [showHitImage, setShowHitImage] = useState<boolean>(false);
+
+  const hit = hitImages[Math.min(Math.floor(score / 10), hitImages.length - 1)];
+  const swing = swingImages[Math.min(Math.floor(score / 10), swingImages.length - 1)];
 
   function generateTargetDetails() {
     const start = Math.floor(Math.random() * (BAR_WIDTH - TARGET_DEFAULT_LENGTH - 2 * BAR_SIDE_SAFE_MARGIN)) + BAR_SIDE_SAFE_MARGIN;
