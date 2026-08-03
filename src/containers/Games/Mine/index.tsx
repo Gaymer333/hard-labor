@@ -3,21 +3,28 @@ import styled from "styled-components";
 import _ready from "../../../assets/images/games/mine/ready.jpg";
 import _1hit from "../../../assets/images/games/mine/1hit.jpg";
 import _1swing from "../../../assets/images/games/mine/1swing.jpg";
+import _1end from "../../../assets/images/games/mine/1end.jpg";
 import _2hit from "../../../assets/images/games/mine/2hit.jpg";
 import _2swing from "../../../assets/images/games/mine/2swing.jpg";
+import _2end from "../../../assets/images/games/mine/2end.jpg";
 import _3hit from "../../../assets/images/games/mine/3hit.jpg";
 import _3swing from "../../../assets/images/games/mine/3swing.jpg";
+import _3end from "../../../assets/images/games/mine/3end.jpg";
 import _4hit from "../../../assets/images/games/mine/4hit.jpg";
 import _4swing from "../../../assets/images/games/mine/4swing.jpg";
+import _4end from "../../../assets/images/games/mine/4end.jpg";
 import _5hit from "../../../assets/images/games/mine/5hit.jpg";
 import _5swing from "../../../assets/images/games/mine/5swing.jpg";
+import _5end from "../../../assets/images/games/mine/5end.jpg";
 import _6hit from "../../../assets/images/games/mine/6hit.jpg";
 import _6swing from "../../../assets/images/games/mine/6swing.jpg";
+import _6end from "../../../assets/images/games/mine/6end.jpg";
 import _lose from "../../../assets/images/games/mine/lose.png";
 import _copperUrl from "../../../assets/images/resources/cooper.png";
 
 const hitImages = [_1hit, _2hit, _3hit, _4hit, _5hit, _6hit];
 const swingImages = [_1swing, _2swing, _3swing, _4swing, _5swing, _6swing];
+const endImages = [_1end, _2end, _3end, _4end, _5end, _6end];
 
 const Wrapper = styled.div`
   width: 100%;
@@ -253,7 +260,7 @@ function GamePanel({ onHit, onTimeUp, score }: GamePanelProps) {
             <img src={_copperUrl} alt="Copper" style={{ height: "32px", width: "32px" }} />: {score}
           </ResourceDisplay>
         </ResourcesWrapper>
-        <Timer startTime={30} onTimeUp={onTimeUp} />
+        <Timer startTime={10} onTimeUp={onTimeUp} />
       </TopWrapper>
       <GameBar onHit={onHit} />
     </AbsoluteWrapper>
@@ -264,6 +271,7 @@ function Mine() {
   const [score, setScore] = useState<number>(0);
   const [showHitImage, setShowHitImage] = useState<boolean>(false);
   const [gameRunning, setGameRunning] = useState<boolean>(false);
+  const [startScreenImage, setStartScreenImage] = useState<string>(_ready);
 
   const hit = hitImages[Math.min(Math.floor(score / 5), hitImages.length - 1)];
   const swing = swingImages[Math.min(Math.floor(score / 5), swingImages.length - 1)];
@@ -285,7 +293,10 @@ function Mine() {
     }
   }, [showHitImage]);
 
-  const handleTimeUp = useCallback(() => setGameRunning(false), []);
+  const handleTimeUp = useCallback(() => {
+    setGameRunning(false);
+    setStartScreenImage(endImages[Math.min(Math.floor(score / 5), endImages.length - 1)]);
+  }, []);
 
   function startGame() {
     setScore(0);
@@ -304,7 +315,7 @@ function Mine() {
           : <GameMenu onStartGame={startGame} />}
       <SideWrapper>
         {!gameRunning ? (
-          <img src={_ready} alt="Start" style={{ height: "100%", width: "auto" }} />
+          <img src={startScreenImage} alt="Start" style={{ height: "100%", width: "auto" }} />
         ) :
           showHitImage ? (
             <img src={hit} alt="Hit" style={{ height: "100%", width: "auto" }} />
