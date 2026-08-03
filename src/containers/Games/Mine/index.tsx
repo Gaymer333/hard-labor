@@ -64,6 +64,7 @@ const BAR_HEIGHT = 40;
 const BAR_SIDE_SAFE_MARGIN = 10;
 const TARGET_SIDE_SAFE_MARGIN = 30;
 const TARGET_DEFAULT_LENGTH = 100;
+const MAX_CORRUPTION_LEVEL = 100;
 
 const TopWrapper = styled.div`
   display: flex;
@@ -233,6 +234,28 @@ function GameBar({ onHit }: GameBarProps) {
   );
 }
 
+interface CorruptionBarProps {
+  corruptionLevel: number;
+}
+
+function CorruptionBar({ corruptionLevel }: CorruptionBarProps) {
+  const barWidth = 300;
+  const barHeight = 30;
+  const corruptionPercentage = Math.min(corruptionLevel, 100);
+
+  return (
+    <div style={{ width: `${barWidth}px`, height: `${barHeight}px`, backgroundColor: '#000000', borderRadius: '10px', border: '2px solid #002412' }}>
+      <div style={{
+        width: `${(corruptionPercentage / 100) * barWidth}px`,
+        height: `${barHeight}px`,
+        backgroundColor: '#ff0000',
+        borderRadius: '10px',
+        transition: 'width 0.3s ease-in-out'
+      }} />
+    </div>
+  );
+}
+
 interface GameMenuProps {
   onStartGame: () => void;
 }
@@ -249,9 +272,10 @@ interface GamePanelProps {
   onHit: () => void;
   onTimeUp: () => void;
   score: number;
+  corruptionLevel: number;
 }
 
-function GamePanel({ onHit, onTimeUp, score }: GamePanelProps) {
+function GamePanel({ onHit, onTimeUp, score, corruptionLevel }: GamePanelProps) {
   return (
     <AbsoluteWrapper>
       <TopWrapper>
@@ -263,6 +287,7 @@ function GamePanel({ onHit, onTimeUp, score }: GamePanelProps) {
         <Timer startTime={10} onTimeUp={onTimeUp} />
       </TopWrapper>
       <GameBar onHit={onHit} />
+      <CorruptionBar corruptionLevel={corruptionLevel} />
     </AbsoluteWrapper>
   );
 }
@@ -272,14 +297,16 @@ function Mine() {
   const [showHitImage, setShowHitImage] = useState<boolean>(false);
   const [gameRunning, setGameRunning] = useState<boolean>(false);
   const [startScreenImage, setStartScreenImage] = useState<string>(_ready);
-
-  const hit = hitImages[Math.min(Math.floor(score / 5), hitImages.length - 1)];
-  const swing = swingImages[Math.min(Math.floor(score / 5), swingImages.length - 1)];
+  const [corruptionLevel, setCorruptionLevel] = useState<number>(0);
+  const [animationImages, setAnimationImages] = useState<string[]>([swingImages[0], hitImages[0]]);
+  const currentSwingImageIndexRef = useRef<number>(0);
 
   function onHit() {
     if (gameRunning) {
       setScore(prev => prev + 1);
+      setCorruptionLevel(prev => Math.min(prev + 20, MAX_CORRUPTION_LEVEL));
       setShowHitImage(true);
+      console.log("Hit! currentSwingImageIndexRef.current:", currentSwingImageIndexRef.current, "Score:", score + 1, "Corruption Level:", Math.min(corruptionLevel + 20, MAX_CORRUPTION_LEVEL))
     }
   }
 
@@ -293,13 +320,42 @@ function Mine() {
     }
   }, [showHitImage]);
 
-  const handleTimeUp = useCallback(() => {
-    setGameRunning(false);
-    setStartScreenImage(endImages[Math.min(Math.floor(score / 5), endImages.length - 1)]);
+  useEffect(() => {
+    const corruptionDecayInterval = setInterval(() => {
+      setCorruptionLevel(prev => Math.max(prev - 1, 0));
+    }, 200);
+    return () => clearInterval(corruptionDecayInterval);
   }, []);
 
-  function startGame() {
+  useEffect(() => {
+    if (corruptionLevel >= MAX_CORRUPTION_LEVEL) {
+      setGameRunning(false);
+      setStartScreenImage(_lose);
+    } else {
+      const imageIndex = Math.min(Math.floor(corruptionLevel / MAX_CORRUPTION_LEVEL * swingImages.length), swingImages.length - 1);
+      if (imageIndex <= currentSwingImageIndexRef.current) return;
+      currentSwingImageIndexRef.current = imageIndex;
+      const currentSwingImage = swingImages[imageIndex];
+      const currentHitImage = hitImages[imageIndex];
+      setAnimationImages([currentSwingImage, currentHitImage]);
+    }
+  }, [corruptionLevel]);
+
+  const handleTimeUp = useCallback(() => {
+    setGameRunning(false);
+    setStartScreenImage(endImages[currentSwingImageIndexRef.current]);
+  }, [currentSwingImageIndexRef.current]);
+
+  function resetGame() {
+    setStartScreenImage(_ready);
+    setAnimationImages([swingImages[0], hitImages[0]]);
+    setCorruptionLevel(0);
+    currentSwingImageIndexRef.current = 0;
     setScore(0);
+  }
+
+  function startGame() {
+    resetGame();
     setGameRunning(true);
   }
 
@@ -311,6 +367,7 @@ function Mine() {
             onHit={onHit}
             onTimeUp={handleTimeUp}
             score={score}
+            corruptionLevel={corruptionLevel}
           />
           : <GameMenu onStartGame={startGame} />}
       <SideWrapper>
@@ -318,9 +375,9 @@ function Mine() {
           <img src={startScreenImage} alt="Start" style={{ height: "100%", width: "auto" }} />
         ) :
           showHitImage ? (
-            <img src={hit} alt="Hit" style={{ height: "100%", width: "auto" }} />
+            <img src={animationImages[1]} alt="Hit" style={{ height: "100%", width: "auto" }} />
           ) : (
-            <img src={swing} alt="Swing" style={{ height: "100%", width: "auto" }} />
+            <img src={animationImages[0]} alt="Swing" style={{ height: "100%", width: "auto" }} />
           )}
       </SideWrapper>
     </Wrapper>
