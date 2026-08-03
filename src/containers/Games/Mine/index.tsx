@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import _ready from "../../../assets/images/games/mine/ready.jpg";
 import _1hit from "../../../assets/images/games/mine/1hit.jpg";
@@ -285,6 +285,8 @@ function Mine() {
     }
   }, [showHitImage]);
 
+  const handleTimeUp = useCallback(() => setGameRunning(false), []);
+
   function startGame() {
     setScore(0);
     setGameRunning(true);
@@ -296,7 +298,7 @@ function Mine() {
         gameRunning
           ? <GamePanel
             onHit={onHit}
-            onTimeUp={() => setGameRunning(false)}
+            onTimeUp={handleTimeUp}
             score={score}
           />
           : <GameMenu onStartGame={startGame} />}
