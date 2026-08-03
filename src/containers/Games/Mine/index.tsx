@@ -24,11 +24,10 @@ import _copperUrl from "../../../assets/images/resources/cooper.png";
 
 const hitImages = [_1hit, _2hit, _3hit, _4hit, _5hit, _6hit];
 const swingImages = [_1swing, _2swing, _3swing, _4swing, _5swing, _6swing];
-const endImages = [_1end, _2end, _3end, _4end, _5end, _6end];
+const idleImages = [_1end, _2end, _3end, _4end, _5end, _6end];
 
 const Wrapper = styled.div`
-  width: 100%;
-  height: 100%;
+  height: 100vh;
   display: flex;
   gap: 20px;
   flex-direction: row;
@@ -37,7 +36,8 @@ const Wrapper = styled.div`
 `;
 
 const SideWrapper = styled(Wrapper)`
-  width: 50%;
+  margin-bottom: 15vh;
+  height: 80vh;
 `;
 
 interface AbsoluteWrapperProps {
@@ -46,7 +46,7 @@ interface AbsoluteWrapperProps {
 
 const AbsoluteWrapper = styled.div<AbsoluteWrapperProps>`
   position: absolute;
-  bottom: 50px;
+  bottom: 20px;
   padding: 20px;
   width: ${(props) => props.width || "50%"};
   background-color: rgba(5, 70, 0, 0.8);
@@ -56,7 +56,7 @@ const AbsoluteWrapper = styled.div<AbsoluteWrapperProps>`
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 20px;
+  gap: 10px;
 `;
 
 const BAR_WIDTH = 800;
@@ -248,9 +248,9 @@ function CorruptionBar({ corruptionLevel }: CorruptionBarProps) {
       <div style={{
         width: `${(corruptionPercentage / 100) * barWidth}px`,
         height: `${barHeight}px`,
-        backgroundColor: '#ff0000',
-        borderRadius: '10px',
-        transition: 'width 0.3s ease-in-out'
+        backgroundColor: '#60009c',
+        borderRadius: '8px',
+        transition: 'width 0.2s ease-in-out'
       }} />
     </div>
   );
@@ -292,21 +292,93 @@ function GamePanel({ onHit, onTimeUp, score, corruptionLevel }: GamePanelProps) 
   );
 }
 
+interface GameOverScreenProps {
+  score: number;
+  resetGame: () => void;
+}
+
+function GameOverScreen({ score, resetGame }: GameOverScreenProps) {
+  return (
+    <AbsoluteWrapper width="300px">
+      <h2>Game Over!</h2>
+      <h3>The goo got another body!</h3>
+      <p>Your Score: {score}</p>
+      <button onClick={resetGame}>Restart Game</button>
+    </AbsoluteWrapper>
+  );
+}
+
+interface PreRunScreenProps {
+  corruptionLevel: number;
+  handleShower: () => void;
+  handleGoMining: () => void;
+}
+
+function PreRunScreen({ corruptionLevel, handleShower, handleGoMining }: PreRunScreenProps) {
+  return (
+    <AbsoluteWrapper width="300px">
+      <h2>Get Ready!</h2>
+      <button onClick={handleShower}>Shower</button>
+      <CorruptionBar corruptionLevel={corruptionLevel} />
+      <button onClick={handleGoMining}>Go mining</button>
+    </AbsoluteWrapper>
+  );
+}
+
+interface ControlRendererProps {
+  gameState: "notStarted" | "pre-run" | "running" | "gameover";
+  startGame: () => void;
+  resetGame: () => void;
+  onHit: () => void;
+  handleTimeUp: () => void;
+  score: number;
+  corruptionLevel: number;
+  handleShower: () => void;
+  handleGoMining: () => void;
+}
+
+function ControlRenderer({
+  gameState,
+  startGame,
+  resetGame,
+  onHit,
+  handleTimeUp,
+  score,
+  corruptionLevel,
+  handleShower,
+  handleGoMining,
+}: ControlRendererProps) {
+  if (gameState === "notStarted") {
+    return <GameMenu onStartGame={startGame} />;
+  } else if (gameState === "pre-run") {
+    return <PreRunScreen corruptionLevel={corruptionLevel} handleShower={handleShower} handleGoMining={handleGoMining} />;
+  } else if (gameState === "running") {
+    return <GamePanel onHit={onHit} onTimeUp={handleTimeUp} score={score} corruptionLevel={corruptionLevel} />;
+  } else if (gameState === "gameover") {
+    return <GameOverScreen score={score} resetGame={resetGame} />;
+  }
+}
+
+interface RenderImages {
+  swing: string;
+  hit: string;
+  idle: string;
+}
+
 function Mine() {
   const [score, setScore] = useState<number>(0);
   const [showHitImage, setShowHitImage] = useState<boolean>(false);
   const [gameRunning, setGameRunning] = useState<boolean>(false);
-  const [startScreenImage, setStartScreenImage] = useState<string>(_ready);
+  const [renderImages, setRenderImages] = useState<RenderImages>({ swing: swingImages[0], hit: hitImages[0], idle: idleImages[0] });
   const [corruptionLevel, setCorruptionLevel] = useState<number>(0);
-  const [animationImages, setAnimationImages] = useState<string[]>([swingImages[0], hitImages[0]]);
   const currentSwingImageIndexRef = useRef<number>(0);
+  const [gameState, setGameState] = useState<"notStarted" | "pre-run" | "running" | "gameover">("notStarted");
 
   function onHit() {
     if (gameRunning) {
       setScore(prev => prev + 1);
       setCorruptionLevel(prev => Math.min(prev + 20, MAX_CORRUPTION_LEVEL));
       setShowHitImage(true);
-      console.log("Hit! currentSwingImageIndexRef.current:", currentSwingImageIndexRef.current, "Score:", score + 1, "Corruption Level:", Math.min(corruptionLevel + 20, MAX_CORRUPTION_LEVEL))
     }
   }
 
@@ -321,65 +393,70 @@ function Mine() {
   }, [showHitImage]);
 
   useEffect(() => {
-    const corruptionDecayInterval = setInterval(() => {
-      setCorruptionLevel(prev => Math.max(prev - 1, 0));
-    }, 200);
-    return () => clearInterval(corruptionDecayInterval);
-  }, []);
-
-  useEffect(() => {
     if (corruptionLevel >= MAX_CORRUPTION_LEVEL) {
       setGameRunning(false);
-      setStartScreenImage(_lose);
+      setRenderImages({ swing: _lose, hit: _lose, idle: _lose });
+      setGameState("gameover");
     } else {
       const imageIndex = Math.min(Math.floor(corruptionLevel / MAX_CORRUPTION_LEVEL * swingImages.length), swingImages.length - 1);
-      if (imageIndex <= currentSwingImageIndexRef.current) return;
-      currentSwingImageIndexRef.current = imageIndex;
       const currentSwingImage = swingImages[imageIndex];
       const currentHitImage = hitImages[imageIndex];
-      setAnimationImages([currentSwingImage, currentHitImage]);
+      const currentIdleImage = idleImages[imageIndex];
+      setRenderImages({ swing: currentSwingImage, hit: currentHitImage, idle: currentIdleImage })
     }
   }, [corruptionLevel]);
 
   const handleTimeUp = useCallback(() => {
     setGameRunning(false);
-    setStartScreenImage(endImages[currentSwingImageIndexRef.current]);
+    setGameState("pre-run");
   }, [currentSwingImageIndexRef.current]);
 
   function resetGame() {
-    setStartScreenImage(_ready);
-    setAnimationImages([swingImages[0], hitImages[0]]);
+    setRenderImages({ swing: swingImages[0], hit: hitImages[0], idle: _ready });
     setCorruptionLevel(0);
     currentSwingImageIndexRef.current = 0;
     setScore(0);
+    setGameState("notStarted");
   }
 
   function startGame() {
     resetGame();
     setGameRunning(true);
+    setGameState("running");
+  }
+
+  function handleShower() {
+    setCorruptionLevel(prev => Math.max(prev - 30, 0));
+  }
+
+  function handleGoMining() {
+    setGameState("running");
+    setGameRunning(true);
   }
 
   return (
     <Wrapper>
-      {
-        gameRunning
-          ? <GamePanel
-            onHit={onHit}
-            onTimeUp={handleTimeUp}
-            score={score}
-            corruptionLevel={corruptionLevel}
-          />
-          : <GameMenu onStartGame={startGame} />}
       <SideWrapper>
         {!gameRunning ? (
-          <img src={startScreenImage} alt="Start" style={{ height: "100%", width: "auto" }} />
+          <img src={renderImages.idle} alt="Start" style={{ height: "100%", width: "auto" }} />
         ) :
           showHitImage ? (
-            <img src={animationImages[1]} alt="Hit" style={{ height: "100%", width: "auto" }} />
+            <img src={renderImages.hit} alt="Hit" style={{ height: "100%", width: "auto" }} />
           ) : (
-            <img src={animationImages[0]} alt="Swing" style={{ height: "100%", width: "auto" }} />
+            <img src={renderImages.swing} alt="Swing" style={{ height: "100%", width: "auto" }} />
           )}
       </SideWrapper>
+      <ControlRenderer
+        gameState={gameState}
+        startGame={startGame}
+        resetGame={resetGame}
+        onHit={onHit}
+        handleTimeUp={handleTimeUp}
+        score={score}
+        corruptionLevel={corruptionLevel}
+        handleShower={handleShower}
+        handleGoMining={handleGoMining}
+      />
     </Wrapper>
   );
 }
