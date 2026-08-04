@@ -20,6 +20,11 @@ import _6hit from "../../../assets/images/games/mine/6hit.jpg";
 import _6swing from "../../../assets/images/games/mine/6swing.jpg";
 import _6end from "../../../assets/images/games/mine/6end.jpg";
 import _lose from "../../../assets/images/games/mine/lose.png";
+
+import _1rock from "../../../assets/images/games/mine/1rock.png";
+import _1body from "../../../assets/images/games/mine/1body.png";
+import _1front from "../../../assets/images/games/mine/1front.png";
+
 import _copperUrl from "../../../assets/images/resources/cooper.png";
 
 const hitImages = [_1hit, _2hit, _3hit, _4hit, _5hit, _6hit];
@@ -37,6 +42,11 @@ const Wrapper = styled.div`
 
 const SideWrapper = styled(Wrapper)`
   margin-bottom: 15vh;
+  height: 80vh;
+`;
+
+const ImageElement = styled.img`
+  position: absolute;
   height: 80vh;
 `;
 
@@ -445,6 +455,9 @@ function Mine() {
           ) : (
             <img src={renderImages.swing} alt="Swing" style={{ height: "100%", width: "auto" }} />
           )}
+        <ImageElement src={_1rock} alt="Rock" />
+        <ImageElement src={_1front} alt="Rock" />
+        <ImageElement src={_1body} alt="Rock" />
       </SideWrapper>
       <ControlRenderer
         gameState={gameState}
